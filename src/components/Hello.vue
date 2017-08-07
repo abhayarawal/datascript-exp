@@ -1,10 +1,12 @@
 <template>
   <div>
-    {{list}}
-
-    <div>
+  	<div>
     	<button @click="add">Add</button>
   	</div>
+
+		<li v-for="item in items">
+			{{item[0]}} is {{item[1]}} ({{item[2]}})
+		</li>
   </div>
 </template>
 
@@ -48,10 +50,10 @@ export default {
   name: 'hello',
   data () {
     return {
-    	list: ds.q(`
-				[:find ?name ?age
+    	items: ds.q(`
+				[:find ?name ?age ?t
 				 :where
-				 [?e "name" ?name]
+				 [?e "name" ?name ?t]
 				 [?e "age" ?age]
 				]
 				`, db)
@@ -59,17 +61,17 @@ export default {
   },
   methods: {
   	add: function (e) {
-  		let eid = (this.list.length + 1) * (-1);
+  		let eid = (this.items.length + 1) * (-1);
   		ds.transact(conn, [
   			[":db/add", eid, "name", ch.name()],
   			[":db/add", eid, "age", ch.age()],
   			[":db/add", eid, ":p/id", Math.random().toString(36).substr(2, 7)]
   		]);
 
-		  this.list = ds.q(`
-				[:find ?name ?age
+		  this.items = ds.q(`
+				[:find ?name ?age ?t
 				 :where
-				 [?e "name" ?name]
+				 [?e "name" ?name ?t]
 				 [?e "age" ?age]
 				]
 				`, ds.db(conn));
