@@ -4,6 +4,11 @@
     	<button @click="add">Add</button>
   	</div>
 
+  	<div>
+  		<input v-model="search" @keyup.enter="find">
+  		{{fl}}
+  	</div>
+
 		<li v-for="item in items">
 			{{item[0]}} is {{item[1]}} ({{item[2]}})
 		</li>
@@ -43,14 +48,14 @@ var sample = [
 	{
 		":db/id": -3,
 		":p/id": "7zxnlkb",
-	  ":p/name": ch.name(),
+	  ":p/name": "Mercy",
 	  ":p/job": 1,
 	  ":p/age": 19
 	},
 	{
 		":db/id": -4,
   	":p/id": "zg1jp4q",
-  	":p/name": ch.name(),
+  	":p/name": "Jack",
   	":p/job": 2,
   	":p/age": 17
   }
@@ -71,11 +76,25 @@ var query = `
 	]
 `;
 
+var q2 = `
+	[:find ?name ?age ?type
+	 :in $ ?name
+	 :where
+	 [?e ":p/name" ?name]
+	 [?e ":p/age" ?age]
+	 [?e ":p/job" ?c]
+	 [?c ":job/type" ?type]]
+`
+// ds.q(q2, ds.db(conn), "Mercy")
+// ds.entity(ds.db(conn), [":p/id", "7zxnlkb"]).get(":p/name")
+
 export default {
   name: 'hello',
   data () {
     return {
-    	items: ds.q(query, db)
+    	db: ds.db(conn),
+    	fl: [],
+    	search: ""
     }
   },
   methods: {
@@ -90,10 +109,16 @@ export default {
   			":p/job": 1
   		}]);
 
-		  this.items = ds.q(query, ds.db(conn));
+  		this.db = ds.db(conn)
+  	},
+  	find: function (e) {
+  		this.fl = ds.q(q2, this.db, this.search);
   	}
   },
   computed: {
+  	items: function () {
+  		return ds.q(query, this.db);
+  	},
   }
 }
 </script>
