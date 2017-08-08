@@ -20,23 +20,39 @@ var ch = new Chance();
 var schema = {
 	":p/id": {
 		":db/unqiue": ":db.unique/identity"
+	},
+	":p/job": {
+		":db/type": ":db.type/ref"
 	}
 }
 
 var conn = ds.create_conn(schema);
 
-var sample = [
+ds.transact(conn, [
 	{
-		":db/id": -1,
-		":p/id": "7zxnlkb",
-	  "name": ch.name(),
-	  "age": 19
+		":db/id": 1,
+		":job/type": "Designer"
 	},
 	{
-		":db/id": -2,
+		":db/id": 2,
+		":job/type": "Developer"
+	}
+]);
+
+var sample = [
+	{
+		":db/id": -3,
+		":p/id": "7zxnlkb",
+	  ":p/name": ch.name(),
+	  ":p/job": 1,
+	  ":p/age": 19
+	},
+	{
+		":db/id": -4,
   	":p/id": "zg1jp4q",
-  	"name": ch.name(),
-  	"age": 17
+  	":p/name": ch.name(),
+  	":p/job": 2,
+  	":p/age": 17
   }
 ]
 
@@ -45,36 +61,36 @@ sample.forEach((s, i) => {
 });
 
 var db = ds.db(conn);
+var query = `
+	[:find ?name ?age ?type
+	 :where
+	 [?e ":p/name" ?name]
+	 [?e ":p/age" ?age]
+	 [?e ":p/job" ?c]
+	 [?c ":job/type" ?type]
+	]
+`;
 
 export default {
   name: 'hello',
   data () {
     return {
-    	items: ds.q(`
-				[:find ?name ?age ?t
-				 :where
-				 [?e "name" ?name ?t]
-				 [?e "age" ?age]
-				]
-				`, db)
+    	items: ds.q(query, db)
     }
   },
   methods: {
   	add: function (e) {
   		let eid = (this.items.length + 1) * (-1);
-  		ds.transact(conn, [
-  			[":db/add", eid, "name", ch.name()],
-  			[":db/add", eid, "age", ch.age()],
-  			[":db/add", eid, ":p/id", Math.random().toString(36).substr(2, 7)]
-  		]);
 
-		  this.items = ds.q(`
-				[:find ?name ?age ?t
-				 :where
-				 [?e "name" ?name ?t]
-				 [?e "age" ?age]
-				]
-				`, ds.db(conn));
+  		ds.transact(conn, [{
+  			":db/id": eid,
+  			":p/name": ch.name(),
+  			":p/age": ch.age(),
+  			":p/id": Math.random().toString(36).substr(2, 7),
+  			":p/job": 1
+  		}]);
+
+		  this.items = ds.q(query, ds.db(conn));
   	}
   },
   computed: {
