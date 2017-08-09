@@ -19,6 +19,18 @@
 <script>
 import ds from 'datascript';
 import Chance from 'chance';
+import {createClient} from 'contentful';
+
+const SPACE_ID = "nnlhr3cwksjs";
+const ACCESS_TOKEN =
+	"f74ca89ce0dae36080afe1026708c555912e65803eb59f46a1032677f992505b";
+
+const client = createClient({
+	space: SPACE_ID,
+	accessToken: ACCESS_TOKEN
+});
+
+// client.getEntry('24DPGBDeGEaYy8ms4Y8QMQ').then(entry => console.log(entry));
 
 var ch = new Chance();
 
@@ -31,7 +43,18 @@ var schema = {
 	}
 }
 
+var dbschema = {
+	"eid": {
+		":db/unqiue": ":db.unique/identity"
+	},
+	":author/blogs": {
+		":db/type": ":db.type/ref",
+		":db/cardinality": ":db.cardinality/many"
+	}
+}
+
 var conn = ds.create_conn(schema);
+var dbconn = ds.create_conn(dbschema);
 
 ds.transact(conn, [
 	{
@@ -88,8 +111,52 @@ var q2 = `
 // ds.q(q2, ds.db(conn), "Mercy")
 // ds.entity(ds.db(conn), [":p/id", "7zxnlkb"]).get(":p/name")
 
+// client.getContentTypes()
+// .then((response) => console.log(response.items))
+// .catch(console.error)
+
+
 export default {
   name: 'hello',
+  beforeCreate: function () {
+
+  	let csFormat = (entry) => {
+  		let type = entry.sys.contentType.sys.id;
+  		let obj = {
+  			type: type,
+  			eid: entry.sys.id
+  		};
+
+  		Object.keys(entry.fields).forEach(k => {
+  			let val = entry.fields[k]['en-US'];
+  			if (Array.isArray(val)) {
+	  			obj[`${type}/${k}`] = entry.fields[k]['en-US'].map(e => e.sys.id);
+  			} else {
+	  			obj[`${type}/${k}`] = entry.fields[k]['en-US'];
+	  		}
+  		})
+
+  		// console.log(obj)
+  		ds.transact(dbconn, [obj]);
+  	}
+
+  	client.sync({
+		  initial: true
+		})
+		.then((response) => {
+	
+			response.entries.forEach((e, i) => csFormat(e, i));
+			console.log(
+				ds.q(`[:find ?name ?blogs
+						 	:where
+						 	[?e "eid" "6ieGakZRoA6y4ioOEY6G4s"]
+							[?e "author/name" ?name]
+							[?e "author/blogs" ?blogs]
+						 	]`, ds.db(dbconn)));
+
+		}).catch(console.error);
+  },
+
   data () {
     return {
     	db: ds.db(conn),
