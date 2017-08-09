@@ -1,5 +1,7 @@
 <template>
   <div>
+	  {{qd}}
+  	
   	<div>
     	<button @click="add">Add</button>
   	</div>
@@ -9,9 +11,9 @@
   		{{fl}}
   	</div>
 
-		<li v-for="item in items">
+		<!-- <li v-for="item in items">
 			{{item[0]}} is {{item[1]}} ({{item[2]}})
-		</li>
+		</li> -->
   </div>
 </template>
 
@@ -146,13 +148,14 @@ export default {
 		.then((response) => {
 	
 			response.entries.forEach((e, i) => csFormat(e, i));
-			console.log(
-				ds.q(`[:find ?name ?blogs
-						 	:where
-						 	[?e "eid" "6ieGakZRoA6y4ioOEY6G4s"]
-							[?e "author/name" ?name]
-							[?e "author/blogs" ?blogs]
-						 	]`, ds.db(dbconn)));
+			this.qd = 
+				ds.q(`[:find (pull ?e [*])
+						 	 :where
+						 	 [?e "eid" "6ieGakZRoA6y4ioOEY6G4s"]
+						 	 [?e "author/name" ?name]
+							 [?e "author/blogs" ?blogs]
+							 [(count ?blogs) ?c]
+						 	 ]`, ds.db(dbconn));
 
 		}).catch(console.error);
   },
@@ -161,7 +164,8 @@ export default {
     return {
     	db: ds.db(conn),
     	fl: [],
-    	search: ""
+    	search: "",
+    	qd: []
     }
   },
   methods: {
